@@ -10,16 +10,14 @@ Version - 0.0.1
 import os
 import sys
 import gym
+import csv
 # Module to create Environments for your AI agent to train in
 import RLAI
 # Even if it's unused, you need to keep it here to create your custom gym environment
 import numpy as np
 import random
-import pandas as pd
-from bokeh.palettes import Spectral11
-from bokeh.plotting import figure, show, output_file
-from bokeh.layouts import row
-output_file('temp.html')
+from numpy import genfromtxt
+
 
 class Reinforcement:
 
@@ -45,6 +43,33 @@ class Reinforcement:
             for linenumber, line in enumerate(fp):
                 line = line.strip('\n')
                 self.colordict.append(line)
+
+    # def check_if_store(self, filename, q_table):
+    #
+    #     if os.stat(filename).st_size == 0:
+    #         return True
+    #     else:
+    #         for value in q_table:
+
+
+    def store_qtable(self, q_Table):
+        """
+        Store the Q-table as a text file to use it as a "memory" or database
+        """
+
+        # should_store = self.check_if_store("Qmemory.csv", q_Table)
+
+        try:
+            with open('Qmemory.csv', 'w+', newline='') as csvfile:
+                writerObj = csv.writer(csvfile)
+                for value in q_Table:
+                    writerObj.writerow([str(value[0]), str(value[1])])
+        except IOError:
+            print("Cannot create or open Qmemory.csv in path {}", format(os.curdir))
+            sys.exit()
+
+
+
 
     def q_learning(self):
         """
@@ -76,12 +101,15 @@ class Reinforcement:
         env.colorvalues(self.colordict)  # send our color dictionary to our environment function
 
         # creating the Q-table using numpy
-        Q = np.zeros([env.observation_space.n, env.action_space.n])
+        # create Q table with zeros if there is no memory. If there is, read from file
+        if os.path.isfile("Qmemory.csv"):
+            Q = genfromtxt('Qmemory.csv', delimiter=',')
+        else:
+            Q = np.zeros([env.observation_space.n, env.action_space.n])
         #  number of rows and columns is based on (number of states) X (number of actions)
 
         epochs = 0
         penalties, reward = 0, 0
-        plots = []
 
         for episode in range(1, 5001):  # how many episodes you want to train your agent, the longer the better always
             done = False
@@ -93,6 +121,7 @@ class Reinforcement:
                     action = env.action_space.sample()  # Explore action space
                 else:
                     action = np.argmax(Q[state])  # Exploit learned values
+
                 if self.debug:
                     print("Current Action: {}".format(action))
                 next_state, reward, done, info = env.step(action)  # Pass chosen action to our environment step function
@@ -123,13 +152,13 @@ class Reinforcement:
                 if reward == -10:  # if agent keeps getting negative rewards, incur a penalty
                     penalties += 1
                 state = next_state
-            if episode % 500 == 0:  # display info every 50th episode
+            if episode % 50 == 0:  # display info every 50th episode
                 print('Episode {} Total Reward: {}'.format(episode, G))
                 print(info)  # Ignore unreferenced warning? Since it will never be called before it goes int while loop
                 print('Q table: {}'.format(Q))
-                plots += [self.graph_q(Q, episode)]
-            if episode == 5000:
-                show(row(plots))
+
+        self.store_qtable(Q)
+
         """
         Below is implementation without using Q-learning using a completely random approach. Q learning is around
         50 times more efficient than below code
@@ -151,38 +180,6 @@ class Reinforcement:
         # print("Penalties incurred: {}".format(penalties))
 
         # Printing all the possible actions, states, rewards.
-    
-    def graph_q(self, Q, episode):
-        """
-        Graphs Q table values on layered line graph.
-        """
-        toy_df = pd.DataFrame(data=Q, columns = ('bright', 'dark'), index = range(0,10))   
-
-        numlines=len(toy_df.columns)
-        # mypalette=Spectral11[0:numlines]
-
-        p = figure(width=500, height=300, title = "Episode " + str(episode) + ": Q-Table", x_axis_label="Data #", y_axis_label="Confidence Level") 
-        p.multi_line(xs=[toy_df.index.values]*numlines,
-                        ys=[toy_df[name].values for name in toy_df],
-                        line_color=['#000000', '#FF0000'],
-                        line_width=5)
-        return p
-
-    # def graph_data(self, colordict):
-    #     """
-    #     Graphs current data values on layered line graph.
-    #     """
-    #     toy_df = pd.DataFrame(data=colordict, columns = ('humidity', 'temperature', 'pressure'), index = range(1,7765))   
-
-    #     numlines=len(toy_df.columns)
-    #     mypalette=Spectral11[0:numlines]
-
-    #     p = figure(width=500, height=300) 
-    #     p.multi_line(xs=[toy_df.index.values]*numlines,
-    #                     ys=[toy_df[name].values for name in toy_df],
-    #                     line_color=mypalette,
-    #                     line_width=5)
-    #     show(p)
 
 
 r = Reinforcement("fakevalues.txt", False)  # pass file name which contains color values and a debug parameter
