@@ -26,13 +26,13 @@ class rlaiEnv_temp(gym.Env):
 
         self.n = options
         self.input = dict()  # input which will be set to the values we read from the file
-        self.state = [None, None, None] # state aka current guesses by our AI
+        self.state = [None, None, None, None, None, None, None, None, None] # state aka current guesses by our AI
         self.actions = ["valid","invalid"]  # available actions for our AI (Valid or invalid sensor)
         self.reward = 0
         self.done = 0
         self.counter = 0
         self.action_space = spaces.Discrete(self.n)  # actions = self.n = 2 (RED/BLACK)
-        self.observation_space = spaces.Discrete(3)  # states aka observations = 3 (3 sensor files)
+        self.observation_space = spaces.Discrete(9)  # states aka observations = 3 (3 sensor files)
         self.perfect = True  # if the AI agent gets everything right, it gets a huge +10 reward points
 
     def sensorValue(self, input_sensor):
@@ -44,29 +44,51 @@ class rlaiEnv_temp(gym.Env):
 
         self.input = input_sensor
 
-    def check(self):
+    def check(self, guess_array):
         """
         Function to compare our AI guess and the correct answer
         :return: Boolean based on comparison
         """
-
+        res = []
+        correct = []
         # check what's the correct value based on our input
-        data = list(self.input)[self.counter]
+        if self.counter in [0, 1, 2]:
+            index = 0
+        elif self.counter in [3, 4, 5]:
+            index = 1
+        elif self.counter in [6, 7, 8]:
+            index = 2
+        data = list(self.input)[index]
         data = self.input.get(data)
         t = data.get("temperature")
         h = data.get("humidity")
         p = data.get("pressure")
         #check if the standard deviation is in 40 range for temp,humidity and pressure
-        if (abs(t[0] - t[1]) < 40 and abs(h[0]-h[1]) < 40 and abs(p[0]-p[1]) < 40):
-            correct = 'valid'
-        else:
-            correct = 'invalid'
+        if self.counter in [0, 1, 2]:
+            if (abs(t[0] - t[1]) < 40):
+                correct.append('valid')
+            else:
+                correct.append('invalid')
+        if self.counter in [3, 4, 5]:
+            if (abs(h[0] - h[1]) < 40):
+                correct.append('valid')
+            else:
+                correct.append('invalid')
+        if self.counter in [6, 7, 8]:
+            if (abs(p[0] - p[1]) < 40):
+                correct.append('valid')
+            else:
+                correct.append('invalid')
+
         
         # check if the value our AI guessed is correct and return True or False
-        if correct == self.state[self.counter]:
-            return True
-        else:
-            return False
+        for offset, correct_ans in enumerate(correct):
+            if correct_ans == guess_array[offset]:
+                res.append(True)
+            else:
+                res.append(False)
+
+        return res
 
     def step(self, action):
         """
@@ -82,7 +104,7 @@ class rlaiEnv_temp(gym.Env):
         """
 
         # If more than 3 episodes, we set done to 1 and check if it's perfect or not
-        if self.counter >= 3:
+        if self.counter >= 9:
             self.done = 1
             if self.perfect:
                 self.reward += 10  # if perfect, award a reward of 10 times the normal reward
@@ -96,12 +118,19 @@ class rlaiEnv_temp(gym.Env):
         else:
             self.state[self.counter] = 'invalid'
 
-        res = self.check() # use check to compare guessed value and correct value
-        if res: # if return value is True, give a positive reward
-            self.reward += 1
-        else:  # if return is False, give a negative reward and set perfect to False.
-            self.reward -= 1
-            self.perfect = False
+        if self.counter > 2 and (self.counter+1) % 3 == 0:
+            guess_array = [self.state[self.counter-2], self.state[self.counter-1], self.state[self.counter]]
+            res = self.check(guess_array) # use check to compare guessed value and correct value
+
+ # if return value is True, give a positive reward
+            for each_res in res:
+                if each_res == True:
+                    self.reward += 5
+                else:
+                    self.reward -= 5
+                    self.perfect = False
+ # if return is False, give a negative reward and set perfect to False.
+
 
         self.counter += 1
 
@@ -119,7 +148,7 @@ class rlaiEnv_temp(gym.Env):
         self.done = 0
         self.reward = 0
         self.perfect = True
-        self.state = [None, None, None]
+        self.state = [None, None, None, None, None, None, None, None, None]
         return self.counter
 
     def render(self, mode='human', close=False):
