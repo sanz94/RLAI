@@ -85,8 +85,6 @@ class Reinforcement:
             humidity_sd = self.calculate_SD(humidityList)
             self.result[sensor_file] = {'temperature': temp_sd, 'humidity': humidity_sd, 'pressure': pressure_sd}
         return self.result
-                
-    
     
     def q_learning(self):
         """
@@ -190,6 +188,7 @@ class Reinforcement:
         # print("Penalties incurred: {}".format(penalties))
 
         # Printing all the possible actions, states, rewards.
+
 
 r = Reinforcement(True)
 sensor_files = r.get_sensor_original_file()

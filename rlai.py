@@ -10,11 +10,13 @@ Version - 0.0.1
 import os
 import sys
 import gym
+import csv
 # Module to create Environments for your AI agent to train in
 import RLAI
 # Even if it's unused, you need to keep it here to create your custom gym environment
 import numpy as np
 import random
+from numpy import genfromtxt
 
 
 class Reinforcement:
@@ -41,6 +43,33 @@ class Reinforcement:
             for linenumber, line in enumerate(fp):
                 line = line.strip('\n')
                 self.colordict.append(line)
+
+    # def check_if_store(self, filename, q_table):
+    #
+    #     if os.stat(filename).st_size == 0:
+    #         return True
+    #     else:
+    #         for value in q_table:
+
+
+    def store_qtable(self, q_Table):
+        """
+        Store the Q-table as a text file to use it as a "memory" or database
+        """
+
+        # should_store = self.check_if_store("Qmemory.csv", q_Table)
+
+        try:
+            with open('Qmemory.csv', 'w+', newline='') as csvfile:
+                writerObj = csv.writer(csvfile)
+                for value in q_Table:
+                    writerObj.writerow([str(value[0]), str(value[1])])
+        except IOError:
+            print("Cannot create or open Qmemory.csv in path {}", format(os.curdir))
+            sys.exit()
+
+
+
 
     def q_learning(self):
         """
@@ -72,7 +101,11 @@ class Reinforcement:
         env.colorvalues(self.colordict)  # send our color dictionary to our environment function
 
         # creating the Q-table using numpy
-        Q = np.zeros([env.observation_space.n, env.action_space.n])
+        # create Q table with zeros if there is no memory. If there is, read from file
+        if os.path.isfile("Qmemory.csv"):
+            Q = genfromtxt('Qmemory.csv', delimiter=',')
+        else:
+            Q = np.zeros([env.observation_space.n, env.action_space.n])
         #  number of rows and columns is based on (number of states) X (number of actions)
 
         epochs = 0
@@ -88,6 +121,7 @@ class Reinforcement:
                     action = env.action_space.sample()  # Explore action space
                 else:
                     action = np.argmax(Q[state])  # Exploit learned values
+
                 if self.debug:
                     print("Current Action: {}".format(action))
                 next_state, reward, done, info = env.step(action)  # Pass chosen action to our environment step function
@@ -122,6 +156,9 @@ class Reinforcement:
                 print('Episode {} Total Reward: {}'.format(episode, G))
                 print(info)  # Ignore unreferenced warning? Since it will never be called before it goes int while loop
                 print('Q table: {}'.format(Q))
+
+        self.store_qtable(Q)
+
         """
         Below is implementation without using Q-learning using a completely random approach. Q learning is around
         50 times more efficient than below code
@@ -145,6 +182,6 @@ class Reinforcement:
         # Printing all the possible actions, states, rewards.
 
 
-r = Reinforcement("fakevalues.txt", True)  # pass file name which contains color values and a debug parameter
+r = Reinforcement("fakevalues.txt", False)  # pass file name which contains color values and a debug parameter
 r.parse_file()
 r.q_learning()
