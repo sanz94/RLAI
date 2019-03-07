@@ -11,6 +11,7 @@ Version - 0.0.1
 import os
 import sys
 import gym
+import csv
 # Module to create Environments for your AI agent to train in
 import RLAI
 # Even if it's unused, you need to keep it here to 
@@ -18,20 +19,19 @@ import RLAI
 import numpy as np
 import random
 import math
-
-
+from numpy import genfromtxt
 
 class Reinforcement:
 
     def __init__(self, debug=True):
-        # Dictionary to store the values of colors parsed from a txt/csv file
-        self.colordict = []
-
+        #dictionary to store the dictionary holding standard deviation of temperature,pressure,humidity 
+        # for each sensor
         self.result = dict()
         # Debug set by default to True to print all messages. Setting to debug to False causes
         self.debug = debug
         # significant performance improvements
     
+    #return all the sensor data files name from the directory
     def get_sensor_original_file(self):
         sensor_files = list()
         try:
@@ -46,22 +46,39 @@ class Reinforcement:
         print(sensor_files)
         return sensor_files
     
+    #Calculate the standard deviation for list of data passed
     def calculate_SD(self, data):
         mean = sum(data)/len(data)
-        #print(mean)
         a = list()
         for x in data:
             a.append(pow(abs(x-mean), 2))
         sd = math.sqrt(sum(a)/(len(a)-1))
-        #print(sd)
         negative_sd_3 = round(mean - (sd*3), 3)
         positive_sd_3 = round(mean + (sd*3), 3)
         return negative_sd_3, positive_sd_3
 
+    def store_qtable(self, q_Table):
+        """
+        Store the Q-table as a text file to use it as a "memory" or database
+        """
+
+        # should_store = self.check_if_store("Qmemory.csv", q_Table)
+
+        try:
+            with open('Qmemory.csv', 'w+', newline='') as csvfile:
+                writerObj = csv.writer(csvfile)
+                for value in q_Table:
+                    writerObj.writerow([str(value[0]), str(value[1])])
+        except IOError:
+            print("Cannot create or open Qmemory.csv in path {}", format(os.curdir))
+            sys.exit()
+
+
     def parse_file(self, sensor_files):
         """
-        Function to parse text file to read in color values
+        Function to parse text file to read each sensor file
         """
+        #get each sensor file name
         for sensor_file in sensor_files:
             humidityList = []
             temList = []
@@ -76,16 +93,23 @@ class Reinforcement:
                 for linenumber, line in enumerate(fp):
                     line = line.strip('\n')
                     data = line.split('\t')
-                    self.colordict.append(line)
+                    #List of humidity value of each sensor
                     humidityList.append(float(data[2]))
+                    #List of temperature value of each sensor
                     temList.append(float(data[3]))
+                    #List of pressure value of each sensor
                     pressureList.append(float(data[4]))
+            #calculate 3 Standard deviations for the temperature
             temp_sd = self.calculate_SD(temList)
+            #calculate 3 Standard deviations for the pressure
             pressure_sd = self.calculate_SD(pressureList)
+            #calculate 3 Standard deviations for the humidity
             humidity_sd = self.calculate_SD(humidityList)
+            #add in result dictionary - key as file name 
+            # and standard deviation as value
             self.result[sensor_file] = {'temperature': temp_sd, 'humidity': humidity_sd, 'pressure': pressure_sd}
         return self.result
-    
+                
     def q_learning(self):
         """
         Process goes like this:
@@ -100,7 +124,7 @@ class Reinforcement:
         # Hyperparameters
         alpha = 0.618  # mathematical value of pi or something
         gamma = 0.6  # decay value ?
-        epsilon = 0.1  # exploration vs exploitation
+        epsilon = 0.4  # exploration vs exploitation
         G = 0
 
         """
@@ -112,12 +136,14 @@ class Reinforcement:
         """
 
         # Creating the env
-        env = gym.make("rlai-v001")  # create our custom environment using Gym
-        env.colorvalues(self.colordict)  # send our color dictionary to our environment function
-        env.state(self.temList)
-
+        env = gym.make("rlai-v002")  # create our custom environment using Gym
+        env.sensorValue(self.result)  # send our color dictionary to our environment function
         # creating the Q-table using numpy
-        Q = np.zeros([env.observation_space.n, env.action_space.n])
+        # create Q table with zeros if there is no memory. If there is, read from file
+        if os.path.isfile("Qmemory.csv"):
+            Q = genfromtxt('Qmemory.csv', delimiter=',')
+        else:
+            Q = np.zeros([env.observation_space.n, env.action_space.n])
         #  number of rows and columns is based on (number of states) X (number of actions)
 
         epochs = 0
@@ -167,6 +193,8 @@ class Reinforcement:
                 print('Episode {} Total Reward: {}'.format(episode, G))
                 print(info)  # Ignore unreferenced warning? Since it will never be called before it goes int while loop
                 print('Q table: {}'.format(Q))
+        self.store_qtable(Q)
+
         """
         Below is implementation without using Q-learning using a completely random approach. Q learning is around
         50 times more efficient than below code
@@ -189,8 +217,7 @@ class Reinforcement:
 
         # Printing all the possible actions, states, rewards.
 
-
 r = Reinforcement(True)
 sensor_files = r.get_sensor_original_file()
 result_dict = r.parse_file(sensor_files)
-print(result_dict)
+r.q_learning()

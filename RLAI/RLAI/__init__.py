@@ -1,6 +1,6 @@
 from gym.envs.registration import register
 
 register(
-    id='rlai-v001',
-    entry_point='RLAI.envs.rlai_env:rlaiEnv',
+    id='rlai-v002',
+    entry_point='RLAI.envs.rlai_env_temp:rlaiEnv_temp',
 )
