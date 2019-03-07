@@ -15,7 +15,10 @@ import RLAI
 # Even if it's unused, you need to keep it here to create your custom gym environment
 import numpy as np
 import random
-
+import pandas as pd
+from bokeh.palettes import Spectral11
+from bokeh.plotting import figure, show, output_file
+output_file('temp.html')
 
 class Reinforcement:
 
@@ -122,6 +125,8 @@ class Reinforcement:
                 print('Episode {} Total Reward: {}'.format(episode, G))
                 print(info)  # Ignore unreferenced warning? Since it will never be called before it goes int while loop
                 print('Q table: {}'.format(Q))
+            if episode == 5000:
+                self.graph(Q)
         """
         Below is implementation without using Q-learning using a completely random approach. Q learning is around
         50 times more efficient than below code
@@ -143,8 +148,23 @@ class Reinforcement:
         # print("Penalties incurred: {}".format(penalties))
 
         # Printing all the possible actions, states, rewards.
+    def graph(self, Q):
+        """
+        Graphs current data values,as well as Q table values on layered line graphs.
+        """
+        toy_df = pd.DataFrame(data=Q, columns = ('bright', 'dark'), index = range(0,10))   
+
+        numlines=len(toy_df.columns)
+        # mypalette=Spectral11[0:numlines]
+
+        p = figure(width=500, height=300) 
+        p.multi_line(xs=[toy_df.index.values]*numlines,
+                        ys=[toy_df[name].values for name in toy_df],
+                        line_color=['#000000', '#FF0000'],
+                        line_width=5)
+        show(p)
 
 
-r = Reinforcement("fakevalues.txt", True)  # pass file name which contains color values and a debug parameter
+r = Reinforcement("fakevalues.txt", False)  # pass file name which contains color values and a debug parameter
 r.parse_file()
 r.q_learning()
