@@ -24,13 +24,13 @@ from numpy import genfromtxt
 class Reinforcement:
 
     def __init__(self, debug=True):
-        #dictionary to store the dictionary holding standard deviation of temperature,pressure,humidity 
+        #dictionary to store the dictionary holding standard deviation of temperature,pressure,humidity
         # for each sensor
         self.result = dict()
         # Debug set by default to True to print all messages. Setting to debug to False causes
         self.debug = debug
         # significant performance improvements
-    
+
     #return all the sensor data files name from the directory
     def get_sensor_original_file(self):
         sensor_files = list()
@@ -45,7 +45,7 @@ class Reinforcement:
                     sensor_files.append(file_name)
         print(sensor_files)
         return sensor_files
-    
+
     #Calculate the standard deviation for list of data passed
     def calculate_SD(self, data):
         mean = sum(data)/len(data)
@@ -105,11 +105,11 @@ class Reinforcement:
             pressure_sd = self.calculate_SD(pressureList)
             #calculate 3 Standard deviations for the humidity
             humidity_sd = self.calculate_SD(humidityList)
-            #add in result dictionary - key as file name 
+            #add in result dictionary - key as file name
             # and standard deviation as value
             self.result[sensor_file] = {'temperature': temp_sd, 'humidity': humidity_sd, 'pressure': pressure_sd}
         return self.result
-                
+
     def q_learning(self):
         """
         Process goes like this:
@@ -123,8 +123,8 @@ class Reinforcement:
 
         # Hyperparameters
         alpha = 0.618  # mathematical value of pi or something
-        gamma = 0.6  # decay value ?
-        epsilon = 0.4  # exploration vs exploitation
+        gamma = 0.3  # decay value ?
+        epsilon = 0.1  # exploration vs exploitation
         G = 0
 
         """
@@ -217,7 +217,7 @@ class Reinforcement:
 
         # Printing all the possible actions, states, rewards.
 
-r = Reinforcement(True)
+r = Reinforcement(False)
 sensor_files = r.get_sensor_original_file()
 result_dict = r.parse_file(sensor_files)
 r.q_learning()
