@@ -18,6 +18,7 @@ import random
 import pandas as pd
 from bokeh.palettes import Spectral11
 from bokeh.plotting import figure, show, output_file
+from bokeh.layouts import row
 output_file('temp.html')
 
 class Reinforcement:
@@ -80,6 +81,7 @@ class Reinforcement:
 
         epochs = 0
         penalties, reward = 0, 0
+        plots = []
 
         for episode in range(1, 5001):  # how many episodes you want to train your agent, the longer the better always
             done = False
@@ -121,12 +123,13 @@ class Reinforcement:
                 if reward == -10:  # if agent keeps getting negative rewards, incur a penalty
                     penalties += 1
                 state = next_state
-            if episode % 50 == 0:  # display info every 50th episode
+            if episode % 500 == 0:  # display info every 50th episode
                 print('Episode {} Total Reward: {}'.format(episode, G))
                 print(info)  # Ignore unreferenced warning? Since it will never be called before it goes int while loop
                 print('Q table: {}'.format(Q))
+                plots += [self.graph_q(Q, episode)]
             if episode == 5000:
-                self.graph(Q)
+                show(row(plots))
         """
         Below is implementation without using Q-learning using a completely random approach. Q learning is around
         50 times more efficient than below code
@@ -148,21 +151,38 @@ class Reinforcement:
         # print("Penalties incurred: {}".format(penalties))
 
         # Printing all the possible actions, states, rewards.
-    def graph(self, Q):
+    
+    def graph_q(self, Q, episode):
         """
-        Graphs current data values,as well as Q table values on layered line graphs.
+        Graphs Q table values on layered line graph.
         """
         toy_df = pd.DataFrame(data=Q, columns = ('bright', 'dark'), index = range(0,10))   
 
         numlines=len(toy_df.columns)
         # mypalette=Spectral11[0:numlines]
 
-        p = figure(width=500, height=300) 
+        p = figure(width=500, height=300, title = "Episode " + str(episode) + ": Q-Table", x_axis_label="Data #", y_axis_label="Confidence Level") 
         p.multi_line(xs=[toy_df.index.values]*numlines,
                         ys=[toy_df[name].values for name in toy_df],
                         line_color=['#000000', '#FF0000'],
                         line_width=5)
-        show(p)
+        return p
+
+    # def graph_data(self, colordict):
+    #     """
+    #     Graphs current data values on layered line graph.
+    #     """
+    #     toy_df = pd.DataFrame(data=colordict, columns = ('humidity', 'temperature', 'pressure'), index = range(1,7765))   
+
+    #     numlines=len(toy_df.columns)
+    #     mypalette=Spectral11[0:numlines]
+
+    #     p = figure(width=500, height=300) 
+    #     p.multi_line(xs=[toy_df.index.values]*numlines,
+    #                     ys=[toy_df[name].values for name in toy_df],
+    #                     line_color=mypalette,
+    #                     line_width=5)
+    #     show(p)
 
 
 r = Reinforcement("fakevalues.txt", False)  # pass file name which contains color values and a debug parameter
