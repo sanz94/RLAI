@@ -2,8 +2,8 @@
 Custom Environment for our AI agent to train to sort colors and find anamolies in given data sets
 @author(s): Sanjeev Rajasekaran
 Start date: 02/22/2019
-End date: 02/28/2019
-Version - 0.0.1
+End date: 03/23/2019
+Version - 0.0.3
 """
 
 
@@ -11,58 +11,46 @@ import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
 import random
-
-# define globals
-DARK = "dark"
-BRIGHT = "bright"
-RED = "red"
-BLACK = "black"
-
+from datetime import datetime
 
 class rlaiEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, options=2):
+    def __init__(self, options=24):
 
         self.n = options
-        self.input = None  # input which will be set to the values we read from the file
-        self.state = [None, None, None, None, None, None, None, None, None, None] # state aka current guesses by our AI
-        self.actions = ["RED", "BLACK"]  # available actions for our AI
+        self.input = dict()  # input which will be set to the values we read from the file
+        self.state = [None, None] # state aka current guesses by our AI
+        self.actions = ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24"]  # available actions for our AI (Valid or invalid sensor)
         self.reward = 0
         self.done = 0
         self.counter = 0
         self.action_space = spaces.Discrete(self.n)  # actions = self.n = 2 (RED/BLACK)
-        self.observation_space = spaces.Discrete(10)  # states aka observations = 10 (10 values in a file for now)
+        self.observation_space = spaces.Discrete(2)  # states aka observations = 3 (3 sensor files)
         self.perfect = True  # if the AI agent gets everything right, it gets a huge +10 reward points
 
-    def colorvalues(self, inputcolors):
+    def sensorValue(self, sensorinput, max_time):
         """
-        Function to set self.input to whatever colors we read in from the file specified
-        :param inputcolors: Dicitonary containing color values
+        Function to set self.input to whatever Sensor SD we read in from the file specified
+        :param inputcolors: Dicitonary containing sensors SD values
         :return: None
         """
 
-        self.input = inputcolors
+        self.input = sensorinput
+        self.max_time = max_time
 
-    def check(self):
+    def check(self, offset):
         """
         Function to compare our AI guess and the correct answer
         :return: Boolean based on comparison
         """
 
-        # correct = [DARK, DARK, DARK, DARK, DARK, BRIGHT, DARK, DARK, DARK, DARK]
-
-        # check what's the correct value based on our input
-        if self.input[self.counter] == 'RED':
-            correct = 'bright'
-        else:
-            correct = 'dark'
-
         # check if the value our AI guessed is correct and return True or False
-        if correct == self.state[self.counter]:
+        if int(self.state[self.counter]) == self.max_time[offset].hour:
             return True
         else:
             return False
+
 
     def step(self, action):
         """
@@ -77,8 +65,8 @@ class rlaiEnv(gym.Env):
         self.state will be the info we print out containing our systems guesses
         """
 
-        # If more than 9 episodes, we set done to 1 and check if it's perfect or not
-        if self.counter >= 10:
+        # If more than 3 episodes, we set done to 1 and check if it's perfect or not
+        if self.counter >= 2:
             self.done = 1
             if self.perfect:
                 self.reward += 10  # if perfect, award a reward of 10 times the normal reward
@@ -87,22 +75,76 @@ class rlaiEnv(gym.Env):
             print("Episode completed")
             return [self.counter-1, self.reward, self.done, self.state]
 
-        if self.actions[action] == 'RED': # set state based on our systems guess
-            self.state[self.counter] = BRIGHT
-        else:
-            self.state[self.counter] = DARK
+        if self.actions[action] == '0':
+            self.state[self.counter] = "0"
+        elif self.actions[action] == '1':
+            self.state[self.counter] = "1"
+        elif self.actions[action] == '2':
+            self.state[self.counter] = "2"
+        elif self.actions[action] == '3':
+            self.state[self.counter] = "3"
+        elif self.actions[action] == '4':
+            self.state[self.counter] = "4"
+        elif self.actions[action] == '5':
+            self.state[self.counter] = "5"
+        elif self.actions[action] == '6':
+            self.state[self.counter] = "6"
+        elif self.actions[action] == '7':
+            self.state[self.counter] = "7"
+        elif self.actions[action] == '8':
+            self.state[self.counter] = "8"
+        elif self.actions[action] == '9':
+            self.state[self.counter] = "9"
+        elif self.actions[action] == '10':
+            self.state[self.counter] = "10"
+        elif self.actions[action] == '11':
+            self.state[self.counter] = "11"
+        elif self.actions[action] == '12':
+            self.state[self.counter] = "12"
+        elif self.actions[action] == '13':
+            self.state[self.counter] = "13"
+        elif self.actions[action] == '14':
+            self.state[self.counter] = "14"
+        elif self.actions[action] == '15':
+            self.state[self.counter] = "15"
+        elif self.actions[action] == '16':
+            self.state[self.counter] = "16"
+        elif self.actions[action] == '17':
+            self.state[self.counter] = "17"
+        elif self.actions[action] == '18':
+            self.state[self.counter] = "18"
+        elif self.actions[action] == '19':
+            self.state[self.counter] = "19"
+        elif self.actions[action] == '20':
+            self.state[self.counter] = "20"
+        elif self.actions[action] == '21':
+            self.state[self.counter] = "21"
+        elif self.actions[action] == '22':
+            self.state[self.counter] = "22"
+        elif self.actions[action] == '23':
+            self.state[self.counter] = "23"
+        elif self.actions[action] == '24':
+            self.state[self.counter] = "24"
 
-        res = self.check() # use check to compare guessed value and correct value
-        if res: # if return value is True, give a positive reward
-            self.reward += 1
-        else:  # if return is False, give a negative reward and set perfect to False.
-            self.reward -= 1
-            self.perfect = False
+
+        if self.counter < 2:
+            res = self.check(self.counter) # use check to compare guessed value and correct value
+
+ # if return value is True, give a positive reward
+            if res == True:
+                self.reward += 5
+            else:
+                self.reward -= 5
+                self.perfect = False
+ # if return is False, give a negative reward and set perfect to False.
+
 
         self.counter += 1
+        if self.counter == 2:
+            return [0, self.reward, self.done, self.state]
 
         # print("Current State: {} \n Reward: {} \n Done: {}".format(self.state, self.reward, self.done))
-        return [self.counter-1, self.reward, self.done, self.state]
+        return [self.counter, self.reward, self.done, self.state]
 
 
     def reset(self):
@@ -115,7 +157,7 @@ class rlaiEnv(gym.Env):
         self.done = 0
         self.reward = 0
         self.perfect = True
-        self.state = [None, None, None, None, None, None, None, None, None, None]
+        self.state = [None, None]
         return self.counter
 
     def render(self, mode='human', close=False):

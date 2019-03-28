@@ -138,7 +138,7 @@ class Reinforcement:
         """
 
         # Creating the env
-        env = gym.make("rlai-v002")  # create our custom environment using Gym
+        env = gym.make("rlai-v001")  # create our custom environment using Gym
         max_time = []
 
         for sensor_file in self.humiditydict:
