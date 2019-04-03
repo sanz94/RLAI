@@ -29,12 +29,14 @@ class Reinforcement:
 
         self.humiditydict = defaultdict(dict)  # Dictionary to store the values of colors parsed from a txt/csv file
         self.debug = debug  # Debug set by default to True to print all messages. Setting to debug to False causes
+        self.output = {}
         # significant performance improvements
 
     def get_sensor_original_file(self):
         sensor_files = list()
         path1 = os.getcwd() + '/dataset/'
-        os.chdir(path1)
+        if(not os.getcwd().endswith("dataset")):
+            os.chdir(path1)
         try:
             file_list = os.listdir(path='.')
         except (TypeError, FileNotFoundError):
@@ -42,8 +44,9 @@ class Reinforcement:
             exit()
         else:
             for file_name in file_list:
-                if file_name.endswith(".csv"):
+                if file_name.endswith("Data.csv"):
                     sensor_files.append(file_name)
+                    self.output[str(file_name)] = []
         return sensor_files
 
     def parse_file(self, sensor_files):
@@ -76,6 +79,7 @@ class Reinforcement:
 
         # should_store = self.check_if_store("Qmemory.csv", q_Table)
 
+        os.chdir(os.getcwd())
         try:
             with open('Qmemory.csv', 'w+', newline='') as csvfile:
                 writerObj = csv.writer(csvfile)
@@ -107,7 +111,7 @@ class Reinforcement:
                         max_humidity = humidity
                         max_time = time
 
-        return max_time
+        return max_humidity, max_time
 
     def q_learning(self):
         """
@@ -140,10 +144,15 @@ class Reinforcement:
         # Creating the env
         env = gym.make("rlai-v001")  # create our custom environment using Gym
         max_time = []
+        max_humidity = []
+        output = dict
 
         for sensor_file in self.humiditydict:
-            maxx = self.calc_peak_time(self.humiditydict[sensor_file])
-            max_time.append(maxx)
+            maxHumidity, maxTime = self.calc_peak_time(self.humiditydict[sensor_file])
+            max_time.append(maxTime)
+            max_humidity.append(maxHumidity)
+
+
 
         env.sensorValue(self.humiditydict, max_time)  # send our color dictionary to our environment function
 
@@ -209,31 +218,14 @@ class Reinforcement:
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay_rate*episode)
 
         self.store_qtable(Q)
-
-        """
-        Below is implementation without using Q-learning using a completely random approach. Q learning is around
-        50 times more efficient than below code
-        """
-        # while not done:
-        #     action = env.action_space.sample()
-        #     # print("Action chosen: {}".format(action))
-        #     state, reward, done, info = env.step(action)
-        #
-        #     if reward == -10:
-        #         penalties += 1
-        #
-        #     # Put each rendered frame into the dictionary for animation
-        #
-        #     print("Current Action: {} \n Reward: {} \n Current State: {}".format(action, reward, state))
-        #
-        #     epochs += 1
-        # print("Timesteps taken: {}".format(epochs))
-        # print("Penalties incurred: {}".format(penalties))
-
-        # Printing all the possible actions, states, rewards.
+        for offset, file in enumerate(self.output):
+            self.output[file].append(info[offset])
+            self.output[file].append(max_humidity[offset])
+        return self.output
 
 
 r = Reinforcement(False)  # pass file name which contains color values and a debug parameter
 sen_files = r.get_sensor_original_file()
 r.parse_file(sen_files)
-r.q_learning()
+out = r.q_learning()
+print(out)

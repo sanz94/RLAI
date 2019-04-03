@@ -46,10 +46,13 @@ class rlaiEnv(gym.Env):
         """
 
         # check if the value our AI guessed is correct and return True or False
-        if int(self.state[self.counter]) == self.max_time[offset].hour:
-            return True
-        else:
-            return False
+        try:
+            if int(self.state[self.counter]) == self.max_time[offset].hour:
+                return True
+            else:
+                return False
+        except(Exception):
+            print(self.max_time,offset)
 
 
     def step(self, action):
