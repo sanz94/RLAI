@@ -57,7 +57,7 @@ class Reinforcement:
             except ValueError:
                 continue
             number, date = num_date.split(",")
-            time, humidity, temperature, pressure = humidity_temp_pressure.split(",")
+            time, humidity, temperature, pressure, Na = humidity_temp_pressure.split(",")
             self.humiditydict[self.filename][date+" "+time] = humidity
 
 
@@ -84,7 +84,7 @@ class Reinforcement:
         max_humidity = None
 
         for time, humidity in sensorvalues.items():
-            time = datetime.strptime(time, "%m/%d/%y %H:%M")
+            time = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
             lasttime = None
             if time.hour > 22 or time.hour < 8:
                 continue
@@ -202,8 +202,8 @@ class Reinforcement:
         return info[0]
 
 
-r = Reinforcement('14 Feb Data.csv', True)  # pass file name which contains color values and a debug parameter
-sen_files = r.get_sensor_original_file()
-r.parse_file(sen_files)
-out = r.q_learning()
-print(out)
+#r = Reinforcement('14 Feb Data.csv', True)  # pass file name which contains color values and a debug parameter
+#sen_files = r.get_sensor_original_file()
+#r.parse_file(sen_files)
+#out = r.q_learning()
+#print(out)

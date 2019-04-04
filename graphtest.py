@@ -23,13 +23,6 @@ import numpy as np
 server = flask.Flask('app')
 server.secret_key = os.environ.get('secret_key', 'secret')
 
-r=Reinforcement(False)
-sen_files = r.get_sensor_original_file()
-r.parse_file(sen_files)
-#Get dictionary with key as file name and 
-#value as time of that day when there were max people with humidity value of that time
-out =r.q_learning()
-
 app = dash.Dash('app', server=server)
 
 app.scripts.config.serve_locally = False
@@ -66,16 +59,18 @@ app.layout = html.Div([
         min_date_allowed=datetime(2018, 12, 6),
         max_date_allowed=datetime(current_date.year, current_date.month, current_date.day),
     ),
+    html.H1(id='record-error'),
     html.Div([
     html.Div([dcc.Graph(id='temp-graph')], className="six columns"),
     html.Div([dcc.Graph(id='humidity-graph')], className="six columns"),
     html.Div([dcc.Graph(id='pressure-graph')], className="six columns"),
-    ], className="row")
+    ], className="row", id='graph-container',style={'display':'none'})
 ], className="container")
 
 app.css.append_css({
     'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
 })
+app.css.append_css({"external_url": "https://codepen.io/chriddyp/pen/brPBPO.css"})
 
 # START KIPSY: Code to read sensor data for the date selected
 
@@ -148,6 +143,26 @@ def message(filename):
 
 # END KIPSY's Code
 
+
+@app.callback(Output('record-error', 'children'),
+                    [Input('my-date-picker', 'date')])
+def update_temp_graph(selcted_date):
+    file_name = file_download_csv(selcted_date)
+    df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
+    if df.empty:
+        print("no data")
+        return "Sensor data not present"
+    else:
+        return ""
+
+@app.callback(Output('graph-container', 'style'), [Input('my-date-picker', 'date')])
+def hide_graph(selcted_date):
+    file_name = file_download_csv(selcted_date)
+    df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
+    if not df.empty:
+        return {'display':'block'}
+    return {'display':'none'}
+
 @app.callback(Output('temp-graph', 'figure'),
               [Input('my-date-picker', 'date')])
 #Data to create temperature graph
@@ -155,6 +170,8 @@ def update_temp_graph(selcted_date):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
     df = df.sort_values(by='Time')
+    if df.empty:
+        return {'display':'none'}
     return {
         'data': [{
             'x': df.Time,
@@ -180,15 +197,35 @@ def update_humidity_graph(selcted_date):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
     df = df.sort_values(by='Time')
+    r=Reinforcement(file_name,False)
+    sen_files = r.get_sensor_original_file()
+    r.parse_file(sen_files)
+    out =r.q_learning()
+    time = selcted_date+" "+str(out) +":00:00"
+    qdate = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
+    endtime = selcted_date+" "+str(int(out) + 1) +":00:00"
+    endtime = datetime.strptime(endtime, "%Y-%m-%d %H:%M:%S")
+    df1 = df[(df.Time > qdate) & (df.Time < endtime)]
     return {
         'data': [{
             'x': df.Time,
             'y': df.Humidity,
+            'name':'Humidity',
             'line': {
                 'width': 1,
                 'shape': 'spline'
             }
-        }],
+        },
+        {
+            'x': df1.Time,
+            'y': df1.Humidity,
+            'name':'Max people',
+            'scatter': {
+                 'width': 1
+                
+            }
+        }
+        ],
         'layout': {
             'title':'Humidity'
         }
