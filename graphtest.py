@@ -111,10 +111,11 @@ app.css.append_css({
     'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
 })
 
+# START KIPSY: Code to read sensor data for the date selected
+
 # To get rid of error on update_output function
 app.config['suppress_callback_exceptions']=True
 
-# KIPSY: Code to read sensor data for the date selected
 CURRENT_DIRECTORY = os.getcwd()
 UPLOAD_DIRECTORY = CURRENT_DIRECTORY
 
@@ -126,7 +127,6 @@ def save_file(name, content):
     data = content.encode("utf8").split(b";base64,")[1]
     with open(os.path.join(UPLOAD_DIRECTORY, name), "wb") as fp:
         fp.write(base64.decodebytes(data))
-
 
 def uploaded_files():
     """List the files in the upload directory."""
@@ -144,15 +144,12 @@ def file_download_link(filename):
 
 def file_download_csv(selected_date):
     """Convert TSV to CSV file."""
-    # print ("MADE IT")
     if selected_date != None:
         tsv_file_name = "sensorData.tsv"
         csv_file_name = selected_date + ".csv"
         tsv_file_path = UPLOAD_DIRECTORY + "\\" + tsv_file_name
         csv_file_path = UPLOAD_DIRECTORY + "\\" + csv_file_name
         if not os.path.isfile(csv_file_path):
-            # print("nope")
-            print ("OVER HERE" + tsv_file_path)
             sensorData = pd.read_csv(tsv_file_path, sep='\t', header = None)
             sensorData.columns = ["No","Time","Humidity","Temperature","Pressure","NA"]
             sensorData['Time'] = sensorData['Time'].astype('str')
@@ -163,18 +160,14 @@ def file_download_csv(selected_date):
         except:
             return html.Div("Something went wrong! Try again.")
 
-# def read_sensor_file(selected_date):
-
 @app.callback(
     Output("file-list", "children"),
-    [Input("upload-data", "filename"), Input("upload-data", "contents")],
-)
+    [Input("upload-data", "filename"), Input("upload-data", "contents")])
 def update_output(uploaded_filenames, uploaded_file_contents):
     """Save uploaded files and regenerate the file list."""
     if uploaded_filenames is not None and uploaded_file_contents is not None:
         for name, data in zip(uploaded_filenames, uploaded_file_contents):
             save_file(name, data)
-
     files = uploaded_files()
     if len(files) != 0:
         return [html.Li("")]
@@ -184,20 +177,17 @@ def update_output(uploaded_filenames, uploaded_file_contents):
 @app.callback(Output('output', 'children'), [Input('upload-data', 'filename')])
 def message(filename):
     time.sleep(2)
-    # if not isinstance(filename, str):
     filename = ''.join(filename)
     return 'Uploaded ' + filename
 
-# END 
+# END KIPSY's Code
 
 @app.callback(Output('temp-graph', 'figure'),
               [Input('my-dropdown', 'value'),
               Input('my-date-picker', 'date')])
 
 def update_graph(selected_dropdown_value, selcted_date):
-    # print(selcted_date)
     file_name = file_download_csv(selcted_date)
-    # print(file_name)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
     
     return {
@@ -225,7 +215,6 @@ def update_graph(selected_dropdown_value, selcted_date):
 def update_graph(selected_dropdown_value, selcted_date):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
-       
     return {
         'data': [{
             'x': df.Time,
