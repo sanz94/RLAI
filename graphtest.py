@@ -23,42 +23,12 @@ import numpy as np
 server = flask.Flask('app')
 server.secret_key = os.environ.get('secret_key', 'secret')
 
-"""def get_sensor_original_file():
-    Get the file names from dataset folder to display in drop down
-    sensor_files = list()
-    path1 = os.path.join(app.config['DATA_FOLDER'])
-    os.chdir(path1)
-    try:
-        file_list = os.listdir(path='.')
-    except (TypeError, FileNotFoundError):
-        print("Invalid directory path")
-        exit()
-    for file_name in file_list:
-        filedict = dict()
-        if file_name.endswith("Data.csv"):
-            filedict["label"] = file_name.split('.')[0]
-            filedict["value"] = file_name
-            sensor_files.append(filedict)
-    return sensor_files"""
-#filename = get_sensor_original_file()
-
 r=Reinforcement(False)
 sen_files = r.get_sensor_original_file()
 r.parse_file(sen_files)
 #Get dictionary with key as file name and 
 #value as time of that day when there were max people with humidity value of that time
 out =r.q_learning()
-out_key =[]
-for keys,value in out.items():
-    out_key.append(keys)
-sensor_files = list()
-#Create the dict with label value key to display dropdown
-for file_name in out_key:
-        filedict = dict()
-        if file_name.endswith("Data.csv"):
-            filedict["label"] = file_name.split('.')[0]
-            filedict["value"] = file_name
-            sensor_files.append(filedict)
 
 app = dash.Dash('app', server=server)
 
@@ -91,10 +61,6 @@ app.layout = html.Div([
         html.Div(id='output'),
         # html.H2("File List"),
         html.Ul(id="file-list"),
-    dcc.Dropdown(
-        id='my-dropdown',
-        options=sensor_files
-    ),
     dcc.DatePickerSingle(
         id='my-date-picker',
         min_date_allowed=datetime(2018, 12, 6),
@@ -183,13 +149,12 @@ def message(filename):
 # END KIPSY's Code
 
 @app.callback(Output('temp-graph', 'figure'),
-              [Input('my-dropdown', 'value'),
-              Input('my-date-picker', 'date')])
-
-def update_graph(selected_dropdown_value, selcted_date):
+              [Input('my-date-picker', 'date')])
+#Data to create temperature graph
+def update_temp_graph(selcted_date):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
-    
+    df = df.sort_values(by='Time')
     return {
         'data': [{
             'x': df.Time,
@@ -209,18 +174,18 @@ def update_graph(selected_dropdown_value, selcted_date):
     }
 
 @app.callback(Output('humidity-graph', 'figure'),
-              [Input('my-dropdown', 'value'),
-              Input('my-date-picker', 'date')])
-
-def update_graph(selected_dropdown_value, selcted_date):
+              [Input('my-date-picker', 'date')])
+#Data to create humidity graph
+def update_humidity_graph(selcted_date):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
+    df = df.sort_values(by='Time')
     return {
         'data': [{
             'x': df.Time,
             'y': df.Humidity,
             'line': {
-                'width': 3,
+                'width': 1,
                 'shape': 'spline'
             }
         }],
@@ -231,18 +196,18 @@ def update_graph(selected_dropdown_value, selcted_date):
 
 
 @app.callback(Output('pressure-graph', 'figure'),
-              [Input('my-dropdown', 'value'),
-              Input('my-date-picker', 'date')])
-
-def update_pressure_graph(selected_dropdown_value, selcted_date):
+              [Input('my-date-picker', 'date')])
+#Data to create pressure graph
+def update_pressure_graph(selcted_date):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
+    df = df.sort_values(by='Time')
     return {
         'data': [{
             'x': df.Time,
             'y': df.Pressure,
             'line': {
-                'width': 3,
+                'width': 1,
                 'shape': 'spline'
             }
         }
