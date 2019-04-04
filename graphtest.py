@@ -4,13 +4,21 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 import flask
+from flask import Flask, flash, request, redirect, url_for, send_from_directory
+from werkzeug.utils import secure_filename
 import pandas as pd
 import time
 import os
 from datetime import datetime
 import timestring
 from rlai import Reinforcement
+
 import csv
+import base64
+from urllib.parse import quote as urlquote
+
+import re
+import numpy as np
 
 server = flask.Flask('app')
 server.secret_key = os.environ.get('secret_key', 'secret')
@@ -33,10 +41,6 @@ server.secret_key = os.environ.get('secret_key', 'secret')
             sensor_files.append(filedict)
     return sensor_files"""
 #filename = get_sensor_original_file()
-
-#Code to read sensor data for the date selected
-def read_sensor_file(selected_date):
-    print(selected_date)
 
 r=Reinforcement(False)
 sen_files = r.get_sensor_original_file()
@@ -66,6 +70,27 @@ current_date = datetime.now()
 
 app.layout = html.Div([
     html.H1('RLAI Weather'),
+    html.H2("Upload Data File"),
+        dcc.Upload(
+            id="upload-data",
+            children=html.Div(
+                ["Drag and drop or click to browse for upload."]
+            ),
+            style={
+                "width": "100%",
+                "height": "60px",
+                "lineHeight": "60px",
+                "borderWidth": "1px",
+                "borderStyle": "dashed",
+                "borderRadius": "5px",
+                "textAlign": "center",
+                "margin": "10px",
+            },
+            multiple=True,
+        ),
+        html.Div(id='output'),
+        # html.H2("File List"),
+        html.Ul(id="file-list"),
     dcc.Dropdown(
         id='my-dropdown',
         options=sensor_files
@@ -86,14 +111,94 @@ app.css.append_css({
     'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
 })
 
+# To get rid of error on update_output function
+app.config['suppress_callback_exceptions']=True
+
+# KIPSY: Code to read sensor data for the date selected
+CURRENT_DIRECTORY = os.getcwd()
+UPLOAD_DIRECTORY = CURRENT_DIRECTORY
+
+if not os.path.exists(UPLOAD_DIRECTORY):
+    os.makedirs(UPLOAD_DIRECTORY)
+
+def save_file(name, content):
+    """Decode and store a file uploaded with Plotly Dash."""
+    data = content.encode("utf8").split(b";base64,")[1]
+    with open(os.path.join(UPLOAD_DIRECTORY, name), "wb") as fp:
+        fp.write(base64.decodebytes(data))
+
+
+def uploaded_files():
+    """List the files in the upload directory."""
+    files = []
+    for filename in os.listdir(UPLOAD_DIRECTORY):
+        path = os.path.join(UPLOAD_DIRECTORY, filename)
+        if os.path.isfile(path):
+            files.append(filename)
+    return files
+
+def file_download_link(filename):
+    """Create a Plotly Dash 'A' element that downloads a file from the app."""
+    location = "/download/{}".format(urlquote(filename))
+    return html.A(filename, href=location)
+
+def file_download_csv(selected_date):
+    """Convert TSV to CSV file."""
+    # print ("MADE IT")
+    if selected_date != None:
+        tsv_file_name = "sensorData.tsv"
+        csv_file_name = selected_date + ".csv"
+        tsv_file_path = UPLOAD_DIRECTORY + "\\" + tsv_file_name
+        csv_file_path = UPLOAD_DIRECTORY + "\\" + csv_file_name
+        if not os.path.isfile(csv_file_path):
+            # print("nope")
+            print ("OVER HERE" + tsv_file_path)
+            sensorData = pd.read_csv(tsv_file_path, sep='\t', header = None)
+            sensorData.columns = ["No","Time","Humidity","Temperature","Pressure","NA"]
+            sensorData['Time'] = sensorData['Time'].astype('str')
+            selectedData = sensorData['Time'].str.contains(selected_date)
+            sensorData[selectedData].to_csv(csv_file_path, index = False)
+        try:
+            return csv_file_path
+        except:
+            return html.Div("Something went wrong! Try again.")
+
+# def read_sensor_file(selected_date):
+
+@app.callback(
+    Output("file-list", "children"),
+    [Input("upload-data", "filename"), Input("upload-data", "contents")],
+)
+def update_output(uploaded_filenames, uploaded_file_contents):
+    """Save uploaded files and regenerate the file list."""
+    if uploaded_filenames is not None and uploaded_file_contents is not None:
+        for name, data in zip(uploaded_filenames, uploaded_file_contents):
+            save_file(name, data)
+
+    files = uploaded_files()
+    if len(files) != 0:
+        return [html.Li("")]
+    else:
+        return [html.Li(file_download_link(filename)) for filename in files]
+
+@app.callback(Output('output', 'children'), [Input('upload-data', 'filename')])
+def message(filename):
+    time.sleep(2)
+    # if not isinstance(filename, str):
+    filename = ''.join(filename)
+    return 'Uploaded ' + filename
+
+# END 
 
 @app.callback(Output('temp-graph', 'figure'),
               [Input('my-dropdown', 'value'),
               Input('my-date-picker', 'date')])
 
 def update_graph(selected_dropdown_value, selcted_date):
-    #file_name=read_sensor_file(selcted_date)
-    df = pd.read_csv(selected_dropdown_value, sep=',', parse_dates=['Time'])
+    # print(selcted_date)
+    file_name = file_download_csv(selcted_date)
+    # print(file_name)
+    df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
     
     return {
         'data': [{
@@ -118,8 +223,8 @@ def update_graph(selected_dropdown_value, selcted_date):
               Input('my-date-picker', 'date')])
 
 def update_graph(selected_dropdown_value, selcted_date):
-    #file_name=read_sensor_file(selcted_date)
-    df = pd.read_csv(selected_dropdown_value, sep=',', parse_dates=['Time'])
+    file_name = file_download_csv(selcted_date)
+    df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
        
     return {
         'data': [{
@@ -141,8 +246,8 @@ def update_graph(selected_dropdown_value, selcted_date):
               Input('my-date-picker', 'date')])
 
 def update_pressure_graph(selected_dropdown_value, selcted_date):
-    #file_name=read_sensor_file(selcted_date)
-    df = pd.read_csv(selected_dropdown_value, sep=',', parse_dates=['Time'])
+    file_name = file_download_csv(selcted_date)
+    df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
     return {
         'data': [{
             'x': df.Time,
