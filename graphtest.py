@@ -78,7 +78,7 @@ app.css.append_css({"external_url": "https://codepen.io/chriddyp/pen/brPBPO.css"
 app.config['suppress_callback_exceptions']=True
 
 CURRENT_DIRECTORY = os.getcwd()
-UPLOAD_DIRECTORY = CURRENT_DIRECTORY
+UPLOAD_DIRECTORY = CURRENT_DIRECTORY + "/dataset/"
 
 if not os.path.exists(UPLOAD_DIRECTORY):
     os.makedirs(UPLOAD_DIRECTORY)
