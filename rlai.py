@@ -25,52 +25,41 @@ from collections import defaultdict
 
 class Reinforcement:
 
-    def __init__(self, debug=True):
+    def __init__(self, filename, debug=True):
 
         self.humiditydict = defaultdict(dict)  # Dictionary to store the values of colors parsed from a txt/csv file
+        self.filename = filename
         self.debug = debug  # Debug set by default to True to print all messages. Setting to debug to False causes
-        self.output = {}
         # significant performance improvements
 
     def get_sensor_original_file(self):
-        sensor_files = list()
+
         path1 = os.getcwd() + '/dataset/'
         if(not os.getcwd().endswith("dataset")):
             os.chdir(path1)
         try:
-            file_list = os.listdir(path='.')
+            fp = open(self.filename)
         except (TypeError, FileNotFoundError):
             print("Invalid directory path")
             exit()
-        else:
-            for file_name in file_list:
-                if file_name.endswith("Data.csv"):
-                    sensor_files.append(file_name)
-                    self.output[str(file_name)] = []
-        return sensor_files
 
-    def parse_file(self, sensor_files):
+        return fp
+
+    def parse_file(self, file_object):
         """
         Function to parse text file to read in color values
         """
 
-        for sensor_file in sensor_files:
+        lines = file_object.readlines()
+        for line in lines[1::]:
             try:
-                # REad csv file seperated by , and parse the time column as date object
-                f = open(sensor_file)
-                lines = f.readlines()
-                for line in lines[1::]:
-                    try:
-                        num_date, humidity_temp_pressure = line.split()
-                    except ValueError:
-                        continue
-                    number, date = num_date.split(",")
-                    time, humidity, temperature, pressure = humidity_temp_pressure.split(",")
-                    self.humiditydict[sensor_file][date+" "+time] = humidity
+                num_date, humidity_temp_pressure = line.split()
+            except ValueError:
+                continue
+            number, date = num_date.split(",")
+            time, humidity, temperature, pressure = humidity_temp_pressure.split(",")
+            self.humiditydict[self.filename][date+" "+time] = humidity
 
-            except FileNotFoundError:
-                print("Cannot open or find file {} in {}", format(sensor_file, os.curdir))
-                sys.exit()
 
     def store_qtable(self, q_Table):
         """
@@ -97,7 +86,7 @@ class Reinforcement:
         for time, humidity in sensorvalues.items():
             time = datetime.strptime(time, "%m/%d/%y %H:%M")
             lasttime = None
-            if time.hour > 22:
+            if time.hour > 22 or time.hour < 8:
                 continue
             if time.minute != 0 and lasttime:
                 if (time - lasttime).seconds < 3600:
@@ -111,7 +100,7 @@ class Reinforcement:
                         max_humidity = humidity
                         max_time = time
 
-        return max_humidity, max_time
+        return max_time
 
     def q_learning(self):
         """
@@ -125,7 +114,7 @@ class Reinforcement:
         """
 
         # Hyperparameters
-        alpha = 0.7 # mathematical value of pi or something
+        alpha = 0.7  # mathematical value of pi or something
         gamma = 0.618  # decay value ?
         epsilon = 1  # exploration vs exploitation
         max_epsilon = 1
@@ -142,32 +131,24 @@ class Reinforcement:
         """
 
         # Creating the env
-        env = gym.make("rlai-v001")  # create our custom environment using Gym
+        env = gym.make("rlai-v002")  # create our custom environment using Gym
         max_time = []
-        max_humidity = []
-        output = dict
 
-        for sensor_file in self.humiditydict:
-            maxHumidity, maxTime = self.calc_peak_time(self.humiditydict[sensor_file])
-            max_time.append(maxTime)
-            max_humidity.append(maxHumidity)
-
-
+        maxTime = self.calc_peak_time(self.humiditydict[self.filename])
+        max_time.append(maxTime)
 
         env.sensorValue(self.humiditydict, max_time)  # send our color dictionary to our environment function
 
         # creating the Q-table using numpy
         # create Q table with zeros if there is no memory. If there is, read from file
-        if os.path.isfile("Qmemory.csv"):
-            Q = genfromtxt('Qmemory.csv', delimiter=',')
-        else:
-            Q = np.zeros([env.observation_space.n, env.action_space.n])
+
+        Q = np.zeros([env.observation_space.n, env.action_space.n])
         #  number of rows and columns is based on (number of states) X (number of actions)
 
         epochs = 0
         penalties, reward = 0, 0
 
-        for episode in range(1, 1001):  # how many episodes you want to train your agent, the longer the better always
+        for episode in range(1, 5001):  # how many episodes you want to train your agent, the longer the better always
             done = False
             G, reward = 0, 0
             state = env.reset()  # reset environment variables to default at start
@@ -217,14 +198,11 @@ class Reinforcement:
 
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay_rate*episode)
 
-        self.store_qtable(Q)
-        for offset, file in enumerate(self.output):
-            self.output[file].append(info[offset])
-            self.output[file].append(max_humidity[offset])
-        return self.output
+        #self.store_qtable(Q)
+        return info
 
 
-r = Reinforcement(False)  # pass file name which contains color values and a debug parameter
+r = Reinforcement('14 Feb Data.csv', True)  # pass file name which contains color values and a debug parameter
 sen_files = r.get_sensor_original_file()
 r.parse_file(sen_files)
 out = r.q_learning()
