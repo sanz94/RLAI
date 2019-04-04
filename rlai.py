@@ -199,7 +199,7 @@ class Reinforcement:
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay_rate*episode)
 
         #self.store_qtable(Q)
-        return info
+        return info[0]
 
 
 r = Reinforcement('14 Feb Data.csv', True)  # pass file name which contains color values and a debug parameter
