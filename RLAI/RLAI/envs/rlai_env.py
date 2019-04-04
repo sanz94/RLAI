@@ -13,20 +13,20 @@ from gym.utils import seeding
 import random
 from datetime import datetime
 
-class rlaiEnv(gym.Env):
+class rlaiEnv_temp(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, options=24):
 
         self.n = options
         self.input = dict()  # input which will be set to the values we read from the file
-        self.state = [None, None] # state aka current guesses by our AI
+        self.state = [None] # state aka current guesses by our AI
         self.actions = ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24"]  # available actions for our AI (Valid or invalid sensor)
         self.reward = 0
         self.done = 0
         self.counter = 0
         self.action_space = spaces.Discrete(self.n)  # actions = self.n = 2 (RED/BLACK)
-        self.observation_space = spaces.Discrete(2)  # states aka observations = 3 (3 sensor files)
+        self.observation_space = spaces.Discrete(1)  # states aka observations = 3 (3 sensor files)
         self.perfect = True  # if the AI agent gets everything right, it gets a huge +10 reward points
 
     def sensorValue(self, sensorinput, max_time):
@@ -46,13 +46,10 @@ class rlaiEnv(gym.Env):
         """
 
         # check if the value our AI guessed is correct and return True or False
-        try:
-            if int(self.state[self.counter]) == self.max_time[offset].hour:
-                return True
-            else:
-                return False
-        except(Exception):
-            print(self.max_time,offset)
+        if int(self.state[self.counter]) == self.max_time[offset].hour:
+            return True
+        else:
+            return False
 
 
     def step(self, action):
@@ -69,7 +66,7 @@ class rlaiEnv(gym.Env):
         """
 
         # If more than 3 episodes, we set done to 1 and check if it's perfect or not
-        if self.counter >= 2:
+        if self.counter >= 1:
             self.done = 1
             if self.perfect:
                 self.reward += 10  # if perfect, award a reward of 10 times the normal reward
@@ -130,7 +127,7 @@ class rlaiEnv(gym.Env):
             self.state[self.counter] = "24"
 
 
-        if self.counter < 2:
+        if self.counter < 1:
             res = self.check(self.counter) # use check to compare guessed value and correct value
 
  # if return value is True, give a positive reward
@@ -143,7 +140,8 @@ class rlaiEnv(gym.Env):
 
 
         self.counter += 1
-        if self.counter == 2:
+        if self.counter == 1:
+            self.done = 1
             return [0, self.reward, self.done, self.state]
 
         # print("Current State: {} \n Reward: {} \n Done: {}".format(self.state, self.reward, self.done))
@@ -160,7 +158,7 @@ class rlaiEnv(gym.Env):
         self.done = 0
         self.reward = 0
         self.perfect = True
-        self.state = [None, None]
+        self.state = [None]
         return self.counter
 
     def render(self, mode='human', close=False):
