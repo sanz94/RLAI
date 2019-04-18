@@ -52,20 +52,19 @@ app.layout = html.Div([
             multiple=True,
         ),
         html.Div(id='output'),
-        # html.H2("File List"),
-        html.Ul(id="file-list"),
-    dcc.DatePickerSingle(
-        id='my-date-picker',
-        min_date_allowed=datetime(2018, 12, 6),
-        max_date_allowed=datetime(current_date.year, current_date.month, current_date.day),
-    ),
-    html.H1(id='record-error'),
-    html.Div([
-    html.Div([dcc.Graph(id='temp-graph')], className="six columns"),
-    html.Div([dcc.Graph(id='humidity-graph')], className="six columns"),
-    html.Div([dcc.Graph(id='pressure-graph')], className="six columns"),
-    ], className="row", id='graph-container',style={'display':'none'})
-], className="container")
+        html.Ul(id="file-list",style={'list-style-type': 'none'}),
+        dcc.DatePickerSingle(
+            id='my-date-picker',
+            min_date_allowed=datetime(2018, 12, 6),
+            max_date_allowed=datetime(current_date.year, current_date.month, current_date.day),
+        ),
+        html.H1(id='record-error'),
+        html.Div([
+            html.Div([dcc.Graph(id='temp-graph')], className="six columns"),
+            html.Div([dcc.Graph(id='humidity-graph')], className="six columns"),
+            html.Div([dcc.Graph(id='pressure-graph')], className="six columns"),
+        ], className="row", id='graph-container',style={'display':'none'})
+    ], className="container")
 
 app.css.append_css({
     'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
@@ -113,13 +112,9 @@ def file_download_csv(selected_date):
         if not os.path.isfile(csv_file_path):
             sensorData = pd.read_csv(tsv_file_path, sep='\t', header = None)
             sensorData.columns = ["No","Time","Humidity","Temperature","Pressure","NA"]
-            sensorData['Time'] = sensorData['Time'].astype('str')
             selectedData = sensorData['Time'].str.contains(selected_date)
             sensorData[selectedData].to_csv(csv_file_path, index = False)
-        try:
-            return csv_file_path
-        except:
-            return html.Div("Something went wrong! Try again.")
+        return csv_file_path
 
 @app.callback(
     Output("file-list", "children"),
@@ -146,11 +141,10 @@ def message(filename):
 
 @app.callback(Output('record-error', 'children'),
                     [Input('my-date-picker', 'date')])
-def update_temp_graph(selcted_date):
+def sensor_data_error(selcted_date):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
     if df.empty:
-        print("no data")
         return "Sensor data not present"
     else:
         return ""
@@ -170,13 +164,11 @@ def update_temp_graph(selcted_date):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
     df = df.sort_values(by='Time')
-    if df.empty:
-        return {'display':'none'}
     return {
         'data': [{
             'x': df.Time,
             'y': df.Temperature,
-            'line': {
+            'scatter': {
                 'width': 1,
                 'shape': 'spline'
             }
@@ -184,7 +176,9 @@ def update_temp_graph(selcted_date):
         
         ],
         'layout': {
-            'title':'Temperature'
+            'title':'Temperature',
+            'xaxis':{'title': 'Time'},
+            'yaxis':{'title': 'Temperature'}
 
             
         }
@@ -227,7 +221,9 @@ def update_humidity_graph(selcted_date):
         }
         ],
         'layout': {
-            'title':'Humidity'
+            'title':'Humidity',
+            'xaxis':{'title': 'Time'},
+            'yaxis':{'title': 'Humidity'}
         }
     }
 
@@ -251,7 +247,9 @@ def update_pressure_graph(selcted_date):
         
         ],
         'layout': {
-            'title':'Pressure'
+            'title':'Pressure',
+            'xaxis':{'title': 'Time'},
+            'yaxis':{'title': 'Pressure'}
         }
     }
 
