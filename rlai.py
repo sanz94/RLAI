@@ -13,6 +13,7 @@ import gym
 import csv
 # Module to create Environments for your AI agent to train in
 import RLAI
+import unittest
 # Even if it's unused, you need to keep it here to create your custom gym environment
 import numpy as np
 import random
@@ -35,7 +36,7 @@ class Reinforcement:
     def get_sensor_original_file(self):
 
         path1 = os.getcwd() + '/dataset/'
-        if(not os.getcwd().endswith("dataset")):
+        if not os.getcwd().endswith("dataset"):
             os.chdir(path1)
         try:
             fp = open(self.filename)
@@ -200,7 +201,24 @@ class Reinforcement:
 
         #self.store_qtable(Q)
         return info[0]
+    
+class testCases(unittest.TestCase):
 
+    def setUp(self):
+        r = Reinforcement('14 Feb Data.csv', True)  # pass file name which contains color values and a debug parameter
+        sen_files = r.get_sensor_original_file()
+        r.parse_file(sen_files)
+        self.out = r.q_learning()
+
+        self.badFile = Reinforcement("Badfile123.txt", False)
+
+    def testAccuracyRlai(self):
+
+        self.assertEqual(self.out, "7")
+
+    def testInvalidFile(self):
+
+        self.assertEqual("Invalid Directory path", self.badFile)
 
 #r = Reinforcement('14 Feb Data.csv', True)  # pass file name which contains color values and a debug parameter
 #sen_files = r.get_sensor_original_file()
