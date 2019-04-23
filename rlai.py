@@ -42,7 +42,7 @@ class Reinforcement:
             fp = open(self.filename)
         except (TypeError, FileNotFoundError):
             print("Invalid directory path")
-            exit()
+            exit(1)
 
         return fp
 
