@@ -58,7 +58,7 @@ class Reinforcement:
             except ValueError:
                 continue
             number, date = num_date.split(",")
-            time, humidity, temperature, pressure, Na = humidity_temp_pressure.split(",")
+            time, humidity, temperature, pressure = humidity_temp_pressure.split(",")
             self.humiditydict[self.filename][date+" "+time] = humidity
 
 

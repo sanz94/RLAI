@@ -59,11 +59,12 @@ app.layout = html.Div([
             max_date_allowed=datetime(current_date.year, current_date.month, current_date.day),
         ),
         html.H1(id='record-error'),
-        html.Div([
-            html.Div([dcc.Graph(id='temp-graph')], className="six columns"),
-            html.Div([dcc.Graph(id='humidity-graph')], className="six columns"),
-            html.Div([dcc.Graph(id='pressure-graph')], className="six columns"),
-        ], className="row", id='graph-container',style={'display':'none'})
+        dcc.Tabs(id="tabs", value='tab-1', children=[
+        dcc.Tab(label='Temperature', value='tab-1'),
+        dcc.Tab(label='Humidity', value='tab-2'),
+        dcc.Tab(label='Pressure', value='tab-3'),
+        ]),
+        html.Div(id='tabs-content')
     ], className="container")
 
 app.css.append_css({
@@ -167,35 +168,10 @@ def hide_graph(selcted_date):
         return {'display':'block'}
     return {'display':'none'}
 
-@app.callback(Output('temp-graph', 'figure'),
-              [Input('my-date-picker', 'date')])
+@app.callback(Output('tabs-content', 'children'),
+              [Input('my-date-picker', 'date'),Input('tabs', 'value')])
 #Data to create temperature graph
-def update_temp_graph(selcted_date):
-    file_name = file_download_csv(selcted_date)
-    df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
-    df = df.sort_values(by='Time')
-    return {
-        'data': [{
-            'x': df.Time,
-            'y': df.Temperature,
-            'scatter': {
-                'width': 1,
-                'shape': 'spline'
-            }
-        }
-        
-        ],
-        'layout': {
-            'title':'Temperature',
-            'xaxis':{'title': 'Time'},
-            'yaxis':{'title': 'Temperature'}
-        }
-    }
-
-@app.callback(Output('humidity-graph', 'figure'),
-              [Input('my-date-picker', 'date')])
-#Data to create humidity graph
-def update_humidity_graph(selcted_date):
+def update_temp_graph(selcted_date,tab):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
     df = df.sort_values(by='Time')
@@ -208,57 +184,63 @@ def update_humidity_graph(selcted_date):
     endtime = selcted_date+" "+str(int(out) + 1) +":00:00"
     endtime = datetime.strptime(endtime, "%Y-%m-%d %H:%M:%S")
     df1 = df[(df.Time > qdate) & (df.Time < endtime)]
-    return {
-        'data': [{
-            'x': df.Time,
-            'y': df.Humidity,
-            'name':'Humidity',
-            'scatter': {
-                'width': 1
-            }
-        },
-        {
-            'x': df1.Time,
-            'y': df1.Humidity,
-            'name':'Max people',
-            'scatter': {
-                 'width': 1
-                
-            }
-        }
-        ],
-        'layout': {
-            'title':'Humidity',
-            'xaxis':{'title': 'Time'},
-            'yaxis':{'title': 'Humidity'}
-        }
-    }
+    if tab == 'tab-1':
+        return html.Div([
+            dcc.Graph(
+                id='graph-1-tabs',
+                figure={
+                    'data': [{
+                        'x': df.Time,
+                        'y': df.Temperature,
+                        'scatter': {
+                        'width': 1,
+                        'shape': 'spline'
+                        }
+                    }]
+                }
+            )
+        ])
+    elif tab == 'tab-2':
+        return html.Div([
+            dcc.Graph(
+                id='graph-2-tabs',
+                figure={
+                    'data': [{
+                        'x': df.Time,
+                        'y': df.Humidity,
+                        'name':'Humidity',
+                        'scatter': {
+                            'width': 1
+                        }
+                     },
+                        {
+                        'x': df1.Time,
+                        'y': df1.Humidity,
+                        'name':'Max people',
+                        'scatter': {
+                        'width': 1
+                        }
+                    }]
+                }
+            )
+        ])
+    elif tab == 'tab-3':
+        return html.Div([
+            dcc.Graph(
+                id='graph-1-tabs',
+                figure={
+                    'data': [{
+                        'x': df.Time,
+                        'y': df.Pressure,
+                        'line': {
+                          'width': 1,
+                         'shape': 'spline'
+                         }
+                        }]
+                }
+            )
+        ])
 
-
-@app.callback(Output('pressure-graph', 'figure'),
-              [Input('my-date-picker', 'date')])
-#Data to create pressure graph
-def update_pressure_graph(selcted_date):
-    file_name = file_download_csv(selcted_date)
-    df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
-    df = df.sort_values(by='Time')
-    return {
-        'data': [{
-            'x': df.Time,
-            'y': df.Pressure,
-            'line': {
-                'width': 1,
-                'shape': 'spline'
-            }
-        }
-        
-        ],
-        'layout': {
-            'title':'Pressure',
-            'xaxis':{'title': 'Time'},
-            'yaxis':{'title': 'Pressure'}
-        }
-    }
 
 if __name__ == '__main__':
     app.run_server()
