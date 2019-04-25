@@ -52,14 +52,18 @@ class Reinforcement:
         """
 
         lines = file_object.readlines()
-        for line in lines[1::]:
-            try:
-                num_date, humidity_temp_pressure = line.split()
-            except ValueError:
-                continue
-            number, date = num_date.split(",")
-            time, humidity, temperature, pressure = humidity_temp_pressure.split(",")
-            self.humiditydict[self.filename][date+" "+time] = humidity
+        if len(lines) > 1:
+            for line in lines[1::]:
+                try:
+                    num_date, humidity_temp_pressure = line.split()
+                except ValueError:
+                    continue
+                number, date = num_date.split(",")
+                time, humidity, temperature, pressure = humidity_temp_pressure.split(",")
+                self.humiditydict[self.filename][date+" "+time] = humidity
+            return True
+        else:
+            return False
 
 
     def store_qtable(self, q_Table):
@@ -202,26 +206,3 @@ class Reinforcement:
         #self.store_qtable(Q)
         return info[0]
     
-class testCases(unittest.TestCase):
-
-    def setUp(self):
-        r = Reinforcement('14 Feb Data.csv', True)  # pass file name which contains color values and a debug parameter
-        sen_files = r.get_sensor_original_file()
-        r.parse_file(sen_files)
-        self.out = r.q_learning()
-
-        self.badFile = Reinforcement("Badfile123.txt", False)
-
-    def testAccuracyRlai(self):
-
-        self.assertEqual(self.out, "7")
-
-    def testInvalidFile(self):
-
-        self.assertEqual("Invalid Directory path", self.badFile)
-
-#r = Reinforcement('14 Feb Data.csv', True)  # pass file name which contains color values and a debug parameter
-#sen_files = r.get_sensor_original_file()
-#r.parse_file(sen_files)
-#out = r.q_learning()
-#print(out)

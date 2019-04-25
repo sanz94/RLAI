@@ -59,6 +59,7 @@ app.layout = html.Div([
             max_date_allowed=datetime(current_date.year, current_date.month, current_date.day),
         ),
         html.H1(id='record-error'),
+        
         html.Div([
             html.Div([dcc.Graph(id='temp-graph')], className="six columns"),
             html.Div([dcc.Graph(id='humidity-graph')], className="six columns"),

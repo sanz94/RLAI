@@ -30,6 +30,7 @@ dcc._js_dist[0]['external_url'] = 'https://cdn.plot.ly/plotly-basic-latest.min.j
 
 #Get current date to set calender max date
 current_date = datetime.now()
+app.title = 'RLAI'
 
 app.layout = html.Div([
     html.H1('RLAI Weather'),
@@ -177,34 +178,35 @@ def update_temp_graph(selcted_date,tab):
     df = df.sort_values(by='Time')
     r=Reinforcement(file_name,False)
     sen_files = r.get_sensor_original_file()
-    r.parse_file(sen_files)
-    out =r.q_learning()
-    time = selcted_date+" "+str(out) +":00:00"
-    qdate = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-    endtime = selcted_date+" "+str(int(out) + 1) +":00:00"
-    endtime = datetime.strptime(endtime, "%Y-%m-%d %H:%M:%S")
-    df1 = df[(df.Time > qdate) & (df.Time < endtime)]
-    if tab == 'tab-1':
-        return html.Div([
-            dcc.Graph(
-                id='graph-1-tabs',
-                figure={
-                    'data': [{
-                        'x': df.Time,
-                        'y': df.Temperature,
-                        'scatter': {
-                        'width': 1,
-                        'shape': 'spline'
-                        }
-                    }]
-                }
-            )
-        ])
-    elif tab == 'tab-2':
-        return html.Div([
-            dcc.Graph(
-                id='graph-2-tabs',
-                figure={
+    result=r.parse_file(sen_files)
+    if result:
+        out =r.q_learning()
+        time = selcted_date+" "+str(out) +":00:00"
+        qdate = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
+        endtime = selcted_date+" "+str(int(out) + 1) +":00:00"
+        endtime = datetime.strptime(endtime, "%Y-%m-%d %H:%M:%S")
+        df1 = df[(df.Time > qdate) & (df.Time < endtime)]
+        if tab == 'tab-1':
+            return html.Div([
+                dcc.Graph(
+                    id='graph-1-tabs',
+                    figure={
+                        'data': [{
+                            'x': df.Time,
+                            'y': df.Temperature,
+                            'scatter': {
+                            'width': 1,
+                            'shape': 'spline'
+                            }
+                        }]
+                    }
+                )
+            ])
+        elif tab == 'tab-2':
+            return html.Div([
+                dcc.Graph(
+                    id='graph-2-tabs',
+                    figure={
                     'data': [{
                         'x': df.Time,
                         'y': df.Humidity,
@@ -222,13 +224,13 @@ def update_temp_graph(selcted_date,tab):
                         }
                     }]
                 }
-            )
-        ])
-    elif tab == 'tab-3':
-        return html.Div([
-            dcc.Graph(
-                id='graph-1-tabs',
-                figure={
+                )
+            ])
+        elif tab == 'tab-3':
+            return html.Div([
+                dcc.Graph(
+                    id='graph-1-tabs',
+                    figure={
                     'data': [{
                         'x': df.Time,
                         'y': df.Pressure,
@@ -239,7 +241,7 @@ def update_temp_graph(selcted_date,tab):
                         }]
                 }
             )
-        ])
+            ])
 
 
 if __name__ == '__main__':
