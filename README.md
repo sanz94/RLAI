@@ -10,8 +10,13 @@ Version - 0.3.0
 
 Installation:
 
+Place your csv/tsv files under a folder called dataset
+
 Download Gym
+
 Clone our repo
+
 Copy the RLAI folder to where you installed gym/envs
+
 Run graphtest.py
 
