@@ -52,7 +52,7 @@ app.layout = html.Div([
             },
             multiple=True,
         ),
-        html.Div(id='output'),
+        html.H2(id='output'),
         html.Ul(id="file-list",style={'list-style-type': 'none'}),
         dcc.DatePickerSingle(
             id='my-date-picker',
@@ -113,7 +113,7 @@ def file_download_csv(selected_date):
         csv_file_path = UPLOAD_DIRECTORY + "\\" + csv_file_name
         if not os.path.isfile(csv_file_path):
             sensorData = pd.read_csv(tsv_file_path, sep='\t', header = None)
-            sensorData.columns = ["No","Time","Humidity","Temperature","Pressure","NA"]
+            sensorData.columns = ["No","Time","Humidity","Temperature","Pressure","NA","NA"]
             selectedData = sensorData['Time'].str.contains(selected_date)
             sensorData1 = sensorData[selectedData]
             sensorData1['Humidity'] = pd.to_numeric(sensorData1['Humidity'],errors='coerce')
@@ -176,7 +176,7 @@ def update_temp_graph(selcted_date,tab):
     file_name = file_download_csv(selcted_date)
     df = pd.read_csv(file_name, sep=',', parse_dates=['Time'])
     df = df.sort_values(by='Time')
-    r=Reinforcement(file_name,False)
+    r=Reinforcement(file_name,True)
     sen_files = r.get_sensor_original_file()
     result=r.parse_file(sen_files)
     if result:
@@ -198,7 +198,12 @@ def update_temp_graph(selcted_date,tab):
                             'width': 1,
                             'shape': 'spline'
                             }
-                        }]
+                        }],
+                        'layout': {
+                            'xaxis':{'title': 'Time'
+                            },
+                            'yaxis':{'title': 'Temperature'}
+        }
                     }
                 )
             ])
@@ -222,8 +227,11 @@ def update_temp_graph(selcted_date,tab):
                         'scatter': {
                         'width': 1
                         }
-                    }]
-                }
+                    }],
+                        'layout': {
+                            'xaxis':{'title': 'Time'},
+                            'yaxis':{'title': 'Humidity'}
+                }}
                 )
             ])
         elif tab == 'tab-3':
@@ -238,8 +246,11 @@ def update_temp_graph(selcted_date,tab):
                           'width': 1,
                          'shape': 'spline'
                          }
-                        }]
-                }
+                        }],
+                        'layout': {
+                            'xaxis':{'title': 'Time'},
+                            'yaxis':{'title': 'Pressure'}
+                }}
             )
             ])
 
