@@ -18,8 +18,8 @@ environment and its rules. It’s aimed at helping developers create a model tha
 figures out ways of doing things that humans never thought of.
 
 ## Installation
-Place your csv/tsv files under a folder called dataset.
-Download Gym.
-Clone our repo.
-Copy the RLAI folder to where you installed gym/envs.
-Run graphRLAI.py.
+1. Place your csv/tsv files under a folder called dataset.
+2. Download Gym.
+3. Clone our repo.
+4. Copy the RLAI folder to where you installed gym/envs.
+5. Run graphRLAI.py.
