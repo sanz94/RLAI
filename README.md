@@ -1,12 +1,11 @@
-# Program to implement a Reinforcement learning based Q-learning algorithm to perform functions such as Sorting and
-# finding anamolies in sensor data
+# Reinforcement Learning AI Agent using Q-learning (RLAI)
 @author(s): Sanjeev Rajasekaran, Kipsy Quevada, Suchita Dmello
 
 Start date: 02/22/2019
-
 End date: 03/26/2019
-
 Version - 0.3.0
+
+This is a final project for the SSW-695-A: Software Eng Capstone Studio course led by Professor Gregg Vesonder at Stevens Institute of Technology.
 
 ## Description
 Create an AI agent using reinforcement learning and Q tables which given an input
